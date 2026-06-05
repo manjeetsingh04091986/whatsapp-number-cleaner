@@ -129,6 +129,14 @@ uploaded_file = st.file_uploader(
     type=["csv", "xlsx", "xls"],
 )
 
+st.info(
+    "📋 **Column naming:** your file can have 1–6 columns, but the phone-number "
+    "column **must be named `Mobile`** (spelling matters; capitalisation does not — "
+    "`Mobile`, `mobile`, `MOBILE` all work). An optional column named `Country` "
+    "(e.g. UAE, India) improves accuracy. All other columns (FirstName, LastName, "
+    "JobTitle, ContactID, …) are kept exactly as-is in the output."
+)
+
 ticket_id = st.text_input(
     "Jira Ticket ID",
     placeholder="e.g. DTSD-26188",

@@ -125,24 +125,38 @@ def pick_best_number(mobile_raw, phone_raw, country_iso):
     return None, "none"
 
 
+def _find_col(columns, name):
+    """Case-insensitive lookup of a column header; returns the actual header or None."""
+    target = name.strip().lower()
+    for col in columns:
+        if str(col).strip().lower() == target:
+            return col
+    return None
+
+
 def clean_dataframe(df, mobile_col="Mobile", phone_col="Phone",
                     country_col="Country", keep_cols=None):
-    if keep_cols is None:
-        keep_cols = ["First name", "Country", "JT"]
-    keep_cols_present = [col for col in keep_cols if col in df.columns]
+    # Preserve the EXACT input columns (names + order) so the output mirrors the
+    # input — whether it has just "Mobile" or all of FirstName/LastName/Mobile/
+    # JobTitle/Country/ContactID. Only the Mobile column is cleaned, in place.
+    original_cols = list(df.columns)
 
-    for col in [mobile_col, phone_col, country_col] + keep_cols:
-        if col not in df.columns:
-            df[col] = ""
+    # Locate the phone/country columns case-insensitively. If the file has a
+    # single column, treat it as the phone column regardless of its header.
+    mobile_actual  = _find_col(original_cols, mobile_col)
+    if mobile_actual is None and len(original_cols) == 1:
+        mobile_actual = original_cols[0]
+    phone_actual   = _find_col(original_cols, phone_col)
+    country_actual = _find_col(original_cols, country_col)
 
     cleaned_rows = []
     rejected_rows = []
     unknown_countries = set()
 
     for _, row in df.iterrows():
-        mobile_raw = row.get(mobile_col, "")
-        phone_raw = row.get(phone_col, "")
-        country_raw = row.get(country_col, "")
+        mobile_raw  = row.get(mobile_actual, "")  if mobile_actual  else ""
+        phone_raw   = row.get(phone_actual, "")   if phone_actual   else ""
+        country_raw = row.get(country_actual, "") if country_actual else ""
         country_iso = country_to_iso(country_raw)
         if country_raw and not country_iso:
             unknown_countries.add(str(country_raw).strip())
@@ -169,14 +183,17 @@ def clean_dataframe(df, mobile_col="Mobile", phone_col="Phone",
             rejected_rows.append({**row.to_dict(), "Rejection_Reason": reason})
             continue
 
-        out_row = {col: row.get(col, "") for col in keep_cols_present}
-        out_row["Mobile"] = cleaned_number
+        # Keep every original column as-is; overwrite the Mobile column with the
+        # cleaned (E.164-style digits) value.
+        out_row = {col: row.get(col, "") for col in original_cols}
+        if mobile_actual:
+            out_row[mobile_actual] = cleaned_number
         cleaned_rows.append(out_row)
 
-    cleaned_df = pd.DataFrame(cleaned_rows)
+    cleaned_df = pd.DataFrame(cleaned_rows, columns=original_cols)
     dedup_before = len(cleaned_df)
-    if not cleaned_df.empty:
-        cleaned_df = cleaned_df.drop_duplicates(subset=["Mobile"], keep="first")
+    if not cleaned_df.empty and mobile_actual:
+        cleaned_df = cleaned_df.drop_duplicates(subset=[mobile_actual], keep="first")
     dedup_removed = dedup_before - len(cleaned_df)
 
     rejected_df = pd.DataFrame(rejected_rows)
