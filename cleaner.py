@@ -72,12 +72,37 @@ def country_to_iso(country_str):
     return COUNTRY_MAP.get(str(country_str).strip().lower())
 
 
-def is_invalid_pattern(digits):
+# Minimum length of the national (subscriber) number. phonenumbers'
+# is_valid_number is loose for some countries (e.g. India accepts any 10-digit
+# number starting 6-9), which let short / junk numbers through. This floor is a
+# belt-and-suspenders guard against the "less than 8 digits" cases.
+MIN_NATIONAL_DIGITS = 7
+
+# Run of >= 3 identical consecutive digits, e.g. "555", "0000".
+_RUN_OF_3 = re.compile(r"(\d)\1{2,}")
+# A 2-digit block repeated consecutively (ABAB...), e.g. "1212", "676767".
+_REPEATED_PAIR = re.compile(r"(\d\d)\1+")
+
+
+def is_invalid_pattern(digits, national=None):
+    """
+    Heuristic fake-number detector. Runs the repeated-digit checks against the
+    national (subscriber) portion when available so the country code doesn't
+    trigger false positives; falls back to the full digit string otherwise.
+    """
     if not digits:
         return True
     if len(set(digits)) == 1:
         return True
     if len(digits) >= 4 and digits[3:] == "0" * (len(digits) - 3):
+        return True
+
+    target = national if national else digits
+    # Run of >= 3 identical digits, e.g. "...555..." or "...0000...".
+    if _RUN_OF_3.search(target):
+        return True
+    # A 2-digit pair repeated, e.g. "212121" ("21" x3) or "6767" ("67" x2).
+    if _REPEATED_PAIR.search(target):
         return True
     return False
 
@@ -110,7 +135,10 @@ def validate_and_clean(raw_number, country_iso):
 
     e164 = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
     digits = e164.lstrip("+")
-    if is_invalid_pattern(digits):
+    national = str(parsed.national_number)
+    if len(national) < MIN_NATIONAL_DIGITS:
+        return None
+    if is_invalid_pattern(digits, national):
         return None
     return digits
 
@@ -175,7 +203,9 @@ def clean_dataframe(df, mobile_col="Mobile", phone_col="Phone",
             if not mob_digits and not ph_digits:
                 reason = "Non-numeric / empty after cleaning"
             elif is_invalid_pattern(mob_digits) and (not ph_digits or is_invalid_pattern(ph_digits)):
-                reason = "Invalid pattern (repeated digits / all zeros)"
+                reason = "Invalid pattern (repeated digits / sequences / all zeros)"
+            elif len(mob_digits) < MIN_NATIONAL_DIGITS and len(ph_digits) < MIN_NATIONAL_DIGITS:
+                reason = "Too short to be a valid number"
             elif country_iso:
                 reason = "Not a valid phone number for " + str(country_iso)
             else:

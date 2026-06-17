@@ -31,8 +31,9 @@ def run_pipeline(df, ticket_id, upload, post_jira):
     cleaned_df, rejected_df, stats = clean_dataframe(df)
 
     timestamp   = datetime.now().strftime("%Y%m%d_%H%M")
-    clean_name  = f"cleaned_{ticket_id}_{timestamp}.xlsx"
-    reject_name = f"rejected_{ticket_id}_{timestamp}.xlsx"
+    label       = f"{ticket_id}_{timestamp}" if ticket_id else timestamp
+    clean_name  = f"cleaned_{label}.xlsx"
+    reject_name = f"rejected_{label}.xlsx"
 
     clean_buf  = io.BytesIO()
     reject_buf = io.BytesIO()
@@ -138,8 +139,9 @@ st.info(
 )
 
 ticket_id = st.text_input(
-    "Jira Ticket ID",
-    placeholder="e.g. DTSD-26188",
+    "Jira Ticket ID (optional)",
+    placeholder="e.g. DTSD-26188 — leave blank to test without a ticket",
+    help="Leave blank to run cleaning only (no Jira post). Files are named by timestamp.",
 ).strip().upper()
 
 col1, col2 = st.columns(2)
@@ -156,12 +158,14 @@ if run_clicked:
     if not uploaded_file:
         st.error("Please upload a file first.")
         st.stop()
-    if not ticket_id:
-        st.error("Please enter a Jira ticket ID.")
+    if ticket_id and not re.match(r"^[A-Z]+-\d+$", ticket_id):
+        st.error("Ticket ID format should be like DTSD-26188 (or leave it blank).")
         st.stop()
-    if not re.match(r"^[A-Z]+-\d+$", ticket_id):
-        st.error("Ticket ID format should be like DTSD-26188.")
-        st.stop()
+
+    # No ticket → nothing to post to. Run cleaning only.
+    if do_jira and not ticket_id:
+        st.info("ℹ️ No ticket ID entered — skipping the Jira update and running cleaning only.")
+    post_jira = do_jira and bool(ticket_id)
 
     try:
         if uploaded_file.name.endswith(".csv"):
@@ -175,7 +179,7 @@ if run_clicked:
     st.info(f"📄 Loaded **{len(df):,} rows** from `{uploaded_file.name}`")
 
     with st.spinner("Running pipeline…"):
-        cleaned_df, rejected_df, summary = run_pipeline(df, ticket_id, do_upload, do_jira)
+        cleaned_df, rejected_df, summary = run_pipeline(df, ticket_id, do_upload, post_jira)
 
     if summary is None:
         st.stop()
@@ -196,7 +200,7 @@ if run_clicked:
         else:
             st.warning("📁 Files.com upload did not complete.")
 
-    if do_jira:
+    if post_jira:
         if summary["jira_url"]:
             st.success(f"🎫 Jira updated → [{ticket_id}]({summary['jira_url']})")
         else:
