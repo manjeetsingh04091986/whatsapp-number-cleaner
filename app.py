@@ -120,8 +120,81 @@ _Run timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}_
 
 
 # ── UI ─────────────────────────────────────────────────────────────────────────
-st.title("📱 Whatsapp Number Cleaning & Delivery Automation")
-st.caption("Upload a contact file → clean numbers → upload to Files.com → update Jira.")
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+html, body, [class*="css"], .stMarkdown, button, input { font-family:'Inter', system-ui, sans-serif; }
+.block-container { padding-top: 2.6rem; max-width: 780px; }
+#MainMenu, footer { visibility: hidden; }
+header[data-testid="stHeader"] { background: transparent; }
+
+/* header */
+.wa-header { display:flex; align-items:center; gap:16px; }
+.wa-icon {
+  width:54px; height:54px; border-radius:14px; flex:0 0 auto;
+  background:linear-gradient(135deg,#1FB07A,#0E6F63);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 8px 20px rgba(14,111,99,.30);
+}
+.wa-eyebrow { font-size:.70rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase;
+  color:#12A06F; margin:0 0 3px; }
+.wa-title { font-size:1.55rem; font-weight:800; letter-spacing:-.02em; color:#122A38;
+  line-height:1.12; margin:0; }
+.wa-sub { color:#5B6B78; font-size:.95rem; line-height:1.5; margin:14px 0 0; }
+.wa-steps { display:flex; gap:8px; flex-wrap:wrap; margin:16px 0 2px; }
+.wa-step { font-size:.76rem; font-weight:600; color:#2E5566; background:#EAF5F1;
+  border:1px solid #CFE8DF; border-radius:999px; padding:5px 13px; }
+
+/* file uploader */
+[data-testid="stFileUploaderDropzone"] {
+  background:#F7FAFB; border:1.5px dashed #B9D2CB; border-radius:12px; }
+[data-testid="stFileUploaderDropzone"]:hover { border-color:#1FB07A; background:#F0F8F4; }
+
+/* inputs */
+[data-testid="stTextInput"] input {
+  border-radius:9px !important; border:1px solid #D7E0E4 !important; }
+[data-testid="stTextInput"] input:focus {
+  border-color:#1FB07A !important; box-shadow:0 0 0 2px rgba(31,176,122,.22) !important; }
+
+/* primary button → teal gradient */
+.stButton > button[kind="primary"] {
+  background:linear-gradient(135deg,#1FB07A,#0E6F63) !important; border:none !important;
+  color:#fff !important; font-weight:700 !important; border-radius:10px !important;
+  padding:.62rem 1rem !important; box-shadow:0 8px 18px rgba(14,111,99,.28) !important;
+  transition:filter .15s ease; }
+.stButton > button[kind="primary"]:hover { filter:brightness(1.06); }
+.stButton > button:not([kind="primary"]) { border-radius:10px !important; border:1px solid #D7E0E4 !important; }
+
+/* alerts + metrics */
+[data-testid="stAlert"] { border-radius:10px; }
+[data-testid="stMetric"] {
+  background:#fff; border:1px solid #E6EDF0; border-top:3px solid #1FB07A;
+  border-radius:10px; padding:.8rem 1rem; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+</style>
+
+<div class="wa-header">
+  <div class="wa-icon">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="6" y="2" width="12" height="20" rx="3"/>
+      <path d="M9.3 11.4l2 2 3.6-3.8"/>
+    </svg>
+  </div>
+  <div>
+    <div class="wa-eyebrow">Data Team · Automation</div>
+    <h1 class="wa-title">WhatsApp Number Cleaner</h1>
+  </div>
+</div>
+
+<div class="wa-sub">Upload a contact file — we validate &amp; standardise every number,
+deliver the clean file, and log the run. One click, end to end.</div>
+
+<div class="wa-steps">
+  <span class="wa-step">1 · Clean &amp; validate</span>
+  <span class="wa-step">2 · Deliver to Files.com</span>
+  <span class="wa-step">3 · Update Jira</span>
+</div>
+""", unsafe_allow_html=True)
 
 st.divider()
 
@@ -152,7 +225,7 @@ with col2:
 
 st.divider()
 
-run_clicked = st.button("🚀 Run Pipeline", type="primary", use_container_width=True)
+run_clicked = st.button("Run cleaning pipeline", type="primary", use_container_width=True)
 
 if run_clicked:
     if not uploaded_file:
