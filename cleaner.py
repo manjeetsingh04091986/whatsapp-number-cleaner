@@ -78,8 +78,8 @@ def country_to_iso(country_str):
 # belt-and-suspenders guard against the "less than 8 digits" cases.
 MIN_NATIONAL_DIGITS = 7
 
-# Run of >= 3 identical consecutive digits, e.g. "555", "0000".
-_RUN_OF_3 = re.compile(r"(\d)\1{2,}")
+# Run of >= 5 identical consecutive digits, e.g. "55555", "00000".
+_RUN_OF_5 = re.compile(r"(\d)\1{4,}")
 # A 2-digit block repeated consecutively (ABAB...), e.g. "1212", "676767".
 _REPEATED_PAIR = re.compile(r"(\d\d)\1+")
 
@@ -98,8 +98,8 @@ def is_invalid_pattern(digits, national=None):
         return True
 
     target = national if national else digits
-    # Run of >= 3 identical digits, e.g. "...555..." or "...0000...".
-    if _RUN_OF_3.search(target):
+    # Run of >= 5 identical digits, e.g. "...55555..." or "...00000...".
+    if _RUN_OF_5.search(target):
         return True
     # A 2-digit pair repeated, e.g. "212121" ("21" x3) or "6767" ("67" x2).
     if _REPEATED_PAIR.search(target):
