@@ -1,0 +1,59 @@
+name: Overnight Test Agent
+
+# Runs only on the timer or when the owner clicks "Run workflow".
+# It never runs on pull requests or issues, so outside contributors can't trigger it.
+on:
+  schedule:
+    - cron: "0 2 * * *"   # 02:00 UTC every night
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-ai-tests
+  cancel-in-progress: false
+
+permissions:
+  contents: write         # push the new branch
+  pull-requests: write    # open the PR
+
+jobs:
+  write-tests:
+    if: github.repository_owner == 'manjeetsingh04091986'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # Don't pile up PRs: skip tonight if last night's is still waiting for review.
+      - name: Check for an unreviewed AI tests PR
+        id: open
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          n=$(gh pr list --label ai-tests --state open --json number --jq length)
+          echo "count=$n" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        if: steps.open.outputs.count == '0'
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        if: steps.open.outputs.count == '0'
+        run: pip install -r requirements.txt pytest pytest-cov
+
+      - name: Overnight Test Agent writes tests and opens a PR
+        if: steps.open.outputs.count == '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          prompt: |
+            Follow the "Overnight Test Agent rules" in AGENT_RULES.md (read that file first) exactly.
+            Today's job: pick the single least-tested area of cleaner.py,
+            write pytest tests for it in tests/, run them, and open one PR
+            labelled ai-tests. If you cannot produce passing, meaningful
+            tests, open no PR and say why.
+          claude_args: |
+            --max-turns 30
+            --allowedTools "Read,Glob,Grep,Write,Edit,Bash(python -m pytest:*),Bash(git checkout:*),Bash(git add tests/:*),Bash(git commit:*),Bash(git push:*),Bash(git status:*),Bash(git diff:*),Bash(gh pr create:*),Bash(gh pr list:*)"
