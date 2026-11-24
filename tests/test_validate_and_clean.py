@@ -98,13 +98,8 @@ def test_repeated_digit_pair_is_rejected_as_junk():
     assert validate_and_clean("+971 50 121 2121", None) is None
 
 
-# ---------- Suspected bug ----------
+# ---------- International "00" prefix ----------
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="'00' international dialling prefix is not recognised without a Country hint: "
-           "'00971…' becomes '+00971…' and fails to parse.",
-)
 def test_double_zero_international_prefix_is_auto_detected():
     """'00<country code>…' is a standard international format and should be cleaned without a Country hint."""
     assert validate_and_clean("00971501234567", None) == "971501234567"
