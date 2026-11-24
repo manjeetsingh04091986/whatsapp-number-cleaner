@@ -1,4 +1,4 @@
-name: Nightly AI tests
+name: Overnight Test Agent
 
 # Runs only on the timer or when the owner clicks "Run workflow".
 # It never runs on pull requests or issues, so outside contributors can't trigger it.
@@ -42,14 +42,14 @@ jobs:
         if: steps.open.outputs.count == '0'
         run: pip install -r requirements.txt pytest pytest-cov
 
-      - name: Claude writes tests and opens a PR
+      - name: Overnight Test Agent writes tests and opens a PR
         if: steps.open.outputs.count == '0'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ github.token }}
           prompt: |
-            Follow the "Nightly test agent rules" in CLAUDE.md exactly.
+            Follow the "Overnight Test Agent rules" in AGENT_RULES.md (read that file first) exactly.
             Today's job: pick the single least-tested area of cleaner.py,
             write pytest tests for it in tests/, run them, and open one PR
             labelled ai-tests. If you cannot produce passing, meaningful

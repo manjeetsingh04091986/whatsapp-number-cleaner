@@ -1,6 +1,6 @@
-# Nightly test agent rules
+# Overnight Test Agent rules
 
-These rules apply to the scheduled "Nightly AI tests" job. A human reviews and
+These rules apply to the scheduled "Overnight Test Agent" job. A human reviews and
 merges every PR; the agent never merges.
 
 ## Scope
